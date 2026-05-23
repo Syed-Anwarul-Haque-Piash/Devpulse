@@ -8,7 +8,6 @@ export const createIssue = async (req: Request, res: Response) => {
   try {
     const { title, description, type } = req.body;
 
-    // Validation
     if (!title || !description || !type) {
       sendResponse(
         res,
@@ -68,7 +67,6 @@ export const getAllIssues = async (req: Request, res: Response) => {
   try {
     const { sort = "newest", type, status } = req.query;
 
-    // Validate sort parameter
     if (sort !== "newest" && sort !== "oldest") {
       sendResponse(
         res,
@@ -80,8 +78,8 @@ export const getAllIssues = async (req: Request, res: Response) => {
 
     const filters = {
       sort: (sort as "newest" | "oldest") || "newest",
-      type: type as IssueType | undefined,
-      status: status as IssueStatus | undefined,
+      ...(type !== undefined && { type: type as IssueType }),
+      ...(status !== undefined && { status: status as IssueStatus }),
     };
 
     const issues = await issueService.getAllIssues(filters);
@@ -126,8 +124,6 @@ export const getIssueById = async (req: Request, res: Response) => {
 };
 
 // Update Issue (Authenticated)
-// Maintainer: Can update any issue field including status
-// Contributor: Can only update own issue if status is 'open', cannot change status
 export const updateIssue = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -142,7 +138,6 @@ export const updateIssue = async (req: Request, res: Response) => {
       return;
     }
 
-    // Get current issue
     const currentIssue = await issueService.getIssueByIdRaw(Number(id));
 
     if (!currentIssue) {
@@ -154,11 +149,9 @@ export const updateIssue = async (req: Request, res: Response) => {
       return;
     }
 
-    // Permission check
     const isMaintainer = req.user.role === "maintainer";
     const isReporter = req.user.id === currentIssue.reporter_id;
 
-    // Contributor can only edit their own open issues
     if (!isMaintainer) {
       if (!isReporter) {
         sendResponse(
@@ -178,7 +171,6 @@ export const updateIssue = async (req: Request, res: Response) => {
         return;
       }
 
-      // Contributors cannot change status
       if (status) {
         sendResponse(
           res,
@@ -189,7 +181,6 @@ export const updateIssue = async (req: Request, res: Response) => {
       }
     }
 
-    // Validation for all fields
     if (title !== undefined) {
       if (typeof title !== "string" || title.length > 150) {
         sendResponse(
@@ -235,10 +226,10 @@ export const updateIssue = async (req: Request, res: Response) => {
     }
 
     const updatedIssue = await issueService.updateIssue(Number(id), {
-      title,
-      description,
-      type: type as IssueType | undefined,
-      status: status as IssueStatus | undefined,
+      ...(title !== undefined && { title }),
+      ...(description !== undefined && { description }),
+      ...(type !== undefined && { type: type as IssueType }),
+      ...(status !== undefined && { status: status as IssueStatus }),
     });
 
     if (!updatedIssue) {

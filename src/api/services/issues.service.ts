@@ -27,10 +27,8 @@ class IssueService {
     status?: IssueStatus;
   }) {
     try {
-      // Start with base query
-      let issues: Issue[] = [];
+      let issues: any[] = [];
 
-      // Build WHERE clause conditions
       if (filters?.type && filters?.status) {
         issues = await sql`
           SELECT id, title, description, type, status, reporter_id, created_at, updated_at 
@@ -60,10 +58,8 @@ class IssueService {
         `;
       }
 
-      // Ensure issues is an array
       const issuesArray = Array.isArray(issues) ? issues : [];
 
-      // Fetch reporter details for each issue
       const issuesWithReporters = await Promise.all(
         issuesArray.map(async (issue: Issue) => {
           const reporterResult = await sql`
@@ -107,7 +103,6 @@ class IssueService {
 
     const issue = result[0] as Issue;
 
-    // Fetch reporter details
     const reporterResult = await sql`
       SELECT id, name, email, role FROM users WHERE id = ${issue.reporter_id}
     `;
@@ -130,7 +125,7 @@ class IssueService {
     };
   }
 
-  // Update issue (title, description, type, and status)
+  // Update issue
   async updateIssue(
     id: number,
     data: {
@@ -141,9 +136,8 @@ class IssueService {
     }
   ) {
     try {
-      let result: Issue[] = [];
+      let result: any[] = [];
 
-      // Handle all possible combinations of updates
       if (data.title !== undefined && data.description !== undefined && data.type !== undefined && data.status !== undefined) {
         result = await sql`
           UPDATE issues 
